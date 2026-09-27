@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GrowthGrid</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --surface: #161d2c;
+    --surface-hover: #1c2537;
+    --line: #262f45;
+    --line-soft: #1d2436;
+    --brass: #c19a63;
+    --brass-soft: rgba(193,154,99,0.14);
+    --sage: #7ea779;
+    --sage-soft: rgba(126,167,121,0.16);
+    --text: #e9e6df;
+    --text-dim: #8991a6;
+    --text-faint: #565f78;
+  }
+
+  * { box-sizing: border-box; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    min-height: 100%;
+  }
+
+  body {
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: center top;
+  }
+
+  .page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 56px 24px 80px;
+    animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  header {
+    margin-bottom: 40px;
+  }
+
+  .wordmark {
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+  .wordmark .growth { color: var(--text); }
+  .wordmark .grid { color: var(--brass); font-style: italic; }
+
+  .tagline {
+    color: var(--text-dim);
+    font-size: 15px;
+    margin: 8px 0 0;
+    max-width: 42ch;
+  }
+
+  .stat-row {
+    display: flex;
+    gap: 28px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat .num {
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 24px;
+    color: var(--brass);
+  }
+  .stat .label { font-size: 12.5px; color: var(--text-faint); }
+
+  .add-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .add-row input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 15px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-family: inherit;
+  }
+  .add-row input::placeholder { color: var(--text-faint); }
+  .add-row input:focus {
+    outline: none;
+    border-color: var(--brass);
+  }
+
+  .add-row button {
+    background: var(--brass);
+    color: #1a1408;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter 0.15s ease;
+  }
+  .add-row button:hover { filter: brightness(1.08); }
+  .add-row button:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+  .habits { display: flex; flex-direction: column; gap: 10px; }
+
+  .habit {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .habit-info { min-width: 140px; flex: 1 1 140px; }
+  .habit-name {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0 0 4px;
+    word-break: break-word;
+  }
+  .habit-streak { font-size: 13px; color: var(--text-dim); }
+  .habit-streak strong { color: var(--sage); font-weight: 600; }
+
+  .week {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+  }
+
+  .day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .day-label {
+    font-size: 10.5px;
+    color: var(--text-faint);
+  }
+
+  .cell {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--surface-hover);
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+    padding: 0;
+  }
+  .cell:hover { transform: scale(1.08); border-color: var(--text-faint); }
+  .cell:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .cell.done {
+    background: var(--sage-soft);
+    border-color: var(--sage);
+  }
+  .cell.today { border-color: var(--brass); }
+  .cell.future { opacity: 0.35; cursor: default; }
+  .cell.future:hover { transform: none; }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: color 0.12s ease, background 0.12s ease;
+  }
+  .remove-btn:hover { color: #c96a5a; background: rgba(201,106,90,0.1); }
+
+  .empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-dim);
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .empty strong { color: var(--text); display: block; margin-bottom: 6px; font-size: 16px; }
+
+  footer {
+    margin-top: 40px;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1 class="wordmark"><span class="growth">Growth</span><span class="grid">Grid</span></h1>
+    <p class="tagline">Small marks, repeated daily, add up to something worth tending.</p>
+    <div class="stat-row" id="statRow"></div>
+  </header>
+
+  <div class="add-row">
+    <input id="habitInput" type="text" placeholder="Name a habit — read, stretch, journal…" maxlength="40" />
+    <button id="addBtn">Add</button>
+  </div>
+
+  <div class="habits" id="habitList"></div>
+
+  <footer>Stored only on this device.</footer>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'growthgrid.habits';
+  const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  function todayISO() {
+    const d = new Date();
+    return isoFromDate(d);
+  }
+
+  function isoFromDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function currentWeekDates() {
+    const now = new Date();
+    const jsDay = now.getDay(); // 0 = Sunday
+    const mondayOffset = jsDay === 0 ? -6 : 1 - jsDay;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      dates.push(isoFromDate(d));
+    }
+    return dates;
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function save(habits) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+  }
+
+  function calcStreak(completions) {
+    const set = new Set(completions);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let cursor = new Date(today);
+
+    if (!set.has(isoFromDate(cursor))) {
+      cursor.setDate(cursor.getDate() - 1);
+      if (!set.has(isoFromDate(cursor))) return 0;
+    }
+
+    let streak = 0;
+    while (set.has(isoFromDate(cursor))) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function uid() {
+    return 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function render() {
+    const habits = load();
+    const listEl = document.getElementById('habitList');
+    const statEl = document.getElementById('statRow');
+    const today = todayISO();
+    const week = currentWeekDates();
+
+    const totalHabits = habits.length;
+    const doneToday = habits.filter(h => h.completions.includes(today)).length;
+    const bestStreak = habits.reduce((max, h) => Math.max(max, calcStreak(h.completions)), 0);
+
+    statEl.innerHTML = `
+      <div class="stat"><span class="num">${totalHabits}</span><span class="label">habits tracked</span></div>
+      <div class="stat"><span class="num">${totalHabits ? doneToday + '/' + totalHabits : '—'}</span><span class="label">done today</span></div>
+      <div class="stat"><span class="num">${bestStreak}</span><span class="label">best streak</span></div>
+    `;
+
+    if (!habits.length) {
+      listEl.innerHTML = `
+        <div class="empty">
+          <strong>Nothing planted yet</strong>
+          Add a habit above to start filling in the grid.
+        </div>`;
+      return;
+    }
+
+    listEl.innerHTML = habits.map(h => {
+      const streak = calcStreak(h.completions);
+      const cells = week.map((date, i) => {
+        const isDone = h.completions.includes(date);
+        const isToday = date === today;
+        const isFuture = date > today;
+        const classes = ['cell'];
+        if (isDone) classes.push('done');
+        if (isToday) classes.push('today');
+        if (isFuture) classes.push('future');
+        return `
+          <div class="day">
+            <span class="day-label">${dayLetters[i]}</span>
+            <button class="${classes.join(' ')}" data-habit="${h.id}" data-date="${date}"
+              ${isFuture ? 'disabled' : ''}
+              aria-label="${h.name}, ${date}${isDone ? ', completed' : ''}"></button>
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="habit">
+          <div class="habit-info">
+            <p class="habit-name">${escapeHtml(h.name)}</p>
+            <p class="habit-streak">${streak > 0 ? `<strong>${streak} day${streak === 1 ? '' : 's'}</strong> streak` : 'no streak yet'}</p>
+          </div>
+          <div class="week">${cells}</div>
+          <button class="remove-btn" data-remove="${h.id}" aria-label="Remove ${escapeHtml(h.name)}">Remove</button>
+        </div>`;
+    }).join('');
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function toggleCompletion(habitId, date) {
+    const habits = load();
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+    const idx = habit.completions.indexOf(date);
+    if (idx >= 0) habit.completions.splice(idx, 1);
+    else habit.completions.push(date);
+    save(habits);
+    render();
+  }
+
+  function addHabit(name) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const habits = load();
+    habits.push({ id: uid(), name: trimmed, completions: [] });
+    save(habits);
+    render();
+  }
+
+  function removeHabit(id) {
+    const habits = load().filter(h => h.id !== id);
+    save(habits);
+    render();
+  }
+
+  document.getElementById('addBtn').addEventListener('click', () => {
+    const input = document.getElementById('habitInput');
+    addHabit(input.value);
+    input.value = '';
+    input.focus();
+  });
+
+  document.getElementById('habitInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      document.getElementById('addBtn').click();
+    }
+  });
+
+  document.getElementById('habitList').addEventListener('click', (e) => {
+    const cell = e.target.closest('.cell');
+    if (cell && !cell.disabled) {
+      toggleCompletion(cell.dataset.habit, cell.dataset.date);
+      return;
+    }
+    const removeBtn = e.target.closest('[data-remove]');
+    if (removeBtn) {
+      removeHabit(removeBtn.dataset.remove);
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
